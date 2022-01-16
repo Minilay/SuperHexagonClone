@@ -29,5 +29,11 @@ public class PolygonCreatorEditor : Editor
             _polygonCreator.PreCreate();
             _polygonCreator.CreateWithHole();
         }, "Create Polygon with a hole");
+        
+        GUIButton.Button(() =>
+        {
+            _polygonCreator.PreCreate();
+            _polygonCreator.CreateSegmented();
+        }, "Create segmented Polygon");
     }
 }
