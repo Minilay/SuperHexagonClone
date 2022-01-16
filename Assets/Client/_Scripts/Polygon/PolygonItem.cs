@@ -4,12 +4,11 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
 
-[ExecuteAlways]
-public class PolygonGen : MonoBehaviour
+
+public class PolygonItem : MonoBehaviour
 {
+    //TODO: field refactor
     [Header("Polygon Settings")]
-    public string label = "Joe";
-    public GameObject polygon;
     [Range(3, 18)]
     public int vertexAmount = 3;
     [Range(1.0f, 10.0f)]
@@ -25,28 +24,27 @@ public class PolygonGen : MonoBehaviour
 
     [Header("Collider Settings")]
     public bool hasCollider = false;
-    
-    
+    private GameObject _polygon;
     private GameObject _go;
     private MeshFilter _meshFilter;
     private PolygonCollider2D _coll;
-    private void Awake()
+
+
+    private void OnValidate() //It works when script has compiled. Scripts compiles when fields are changed
     {
-        _go = polygon != null ? polygon : gameObject;
+        _go = _polygon != null ? _polygon : gameObject;
         if (parent != null)
             _go.transform.SetParent(parent.transform);
 
         MeshRenderer meshRenderer = (_go.GetComponent<MeshRenderer>() == null) ? _go.AddComponent<MeshRenderer>() : _go.GetComponent<MeshRenderer>();
+        
         meshRenderer.sharedMaterial = (material == null) ? new Material(Shader.Find("Standard")) : material;
+        
         _meshFilter = _go.GetComponent<MeshFilter>() == null ? _go.AddComponent<MeshFilter>() : _go.GetComponent<MeshFilter>();
+        
         if (hasCollider)
             _coll = _go.GetComponent<PolygonCollider2D>() == null ? _go.AddComponent<PolygonCollider2D>() : _go.GetComponent<PolygonCollider2D>();
 
-
-    }
-
-    private void Start()
-    {
         
         if (!withAHole)
         {
@@ -62,6 +60,7 @@ public class PolygonGen : MonoBehaviour
             AddCollider();
         }
     }
+    
 
     private void SolidPolyGen()
     {
@@ -98,22 +97,22 @@ public class PolygonGen : MonoBehaviour
         mesh.uv = uv;
 
         _meshFilter.mesh = mesh;
-    }
+    }     
 
     private void HoledPolyGen()
     {
          
-        Mesh mesh = new Mesh();
-        Vector3[] verts = new Vector3[vertexAmount * 2];
-        Vector2[] uv = new Vector2[vertexAmount * 2];
-        int[] tris = new int[vertexAmount * 6];
-        Vector3[] normals = new Vector3[vertexAmount * 2];
+        var mesh = new Mesh();
+        var verts = new Vector3[vertexAmount * 2];
+        var uv = new Vector2[vertexAmount * 2];
+        var tris = new int[vertexAmount * 6];
+        var normals = new Vector3[vertexAmount * 2];
         
         
         float x, y;
-        float angleStep = 360.0f / vertexAmount;
+        var angleStep = 360.0f / vertexAmount;
         
-        for (int i = 0; i < vertexAmount; i++)
+        for (var i = 0; i < vertexAmount; i++)
         {
             x = Mathf.Cos((i * angleStep + phase)  * Mathf.Deg2Rad);
             y = Mathf.Sin((i * angleStep + phase) * Mathf.Deg2Rad);
@@ -127,7 +126,7 @@ public class PolygonGen : MonoBehaviour
             normals[vertexAmount + i] = -Vector3.forward;
         }
 
-        for (int i = 0; i < vertexAmount; i++)
+        for (var i = 0; i < vertexAmount; i++)
         {
             tris[i * 3] = i;
             tris[i * 3 + 1] = (i + 1) % vertexAmount;
