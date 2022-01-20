@@ -10,9 +10,10 @@ namespace Client._Scripts.Polygon
         [SerializeField] private float _radius;
         [Range(0, 120)]
         [SerializeField] private float _phase;
-        [Range(0, 100)]
+
         [Header("For polygons with a hole")]
-        [SerializeField] private float _innerRadiusFraction;
+        [SerializeField] private float _innerRadius;
+        
         [Header("For segmented polygon")]
         [SerializeField] private int _segmentCount;
         [SerializeField] private bool _generateRandomSegments;
@@ -21,26 +22,18 @@ namespace Client._Scripts.Polygon
 
         private void OnValidate()
         {
-            if (_vertexCount < 3)
-                _vertexCount = 3;
-            
-            if (_segmentCount < 1)
-                _segmentCount = 1;
-            
-            if (_segmentCount >= _vertexCount)
-                _segmentCount = _vertexCount - 1;
-            
+            Validation();
         }
+
 
         public void PreCreate()
-        {
+        =>
             // ReSharper disable once Unity.PerformanceCriticalCodeInvocation
             _meshFilter = GetComponent<MeshFilter>();
-        }
+        
+        
         public void CreateSolid()
         {
-            var mesh = new Mesh();
-
             var verts = new Vector3[_vertexCount];
             var uv = new Vector2[_vertexCount];
             var tris = new int[3 * (_vertexCount - 2)];
@@ -63,18 +56,12 @@ namespace Client._Scripts.Polygon
                 tris[i * 3 + 1] = 0;
                 tris[i * 3 + 2] = i + 1;
             }
-        
-            mesh.vertices = verts;
-            mesh.triangles = tris;
-            mesh.normals = normals;
-            mesh.uv = uv;
-
-            _meshFilter.mesh = mesh;        
+                  
+            _meshFilter.mesh = MakeMesh(verts, uv, tris, normals);        
         }
 
         public void CreateWithHole()
         {
-            var mesh = new Mesh();
             var verts = new Vector3[_vertexCount * 2];
             var uv = new Vector2[_vertexCount * 2];
             var tris = new int[_vertexCount * 6];
@@ -92,8 +79,8 @@ namespace Client._Scripts.Polygon
                 uv[_vertexCount - i - 1] = new Vector3(x, y);
                 normals[i] = Vector3.back;
             
-                verts[_vertexCount * 2 - i - 1] = new Vector3(x, y) * (_radius * _innerRadiusFraction / 100f);
-                uv[_vertexCount * 2- i - 1] = new Vector3(x, y) * (_innerRadiusFraction / 100);
+                verts[_vertexCount * 2 - i - 1] = new Vector3(x, y) * (_radius - _innerRadius);
+                uv[_vertexCount * 2- i - 1] = new Vector3(x, y) * (_innerRadius / _radius);
                 normals[_vertexCount + i] = Vector3.back;
             }
 
@@ -108,17 +95,12 @@ namespace Client._Scripts.Polygon
                 tris[_vertexCount * 3 + i * 3 + 2] = (i + _vertexCount - 1) % _vertexCount + _vertexCount;
             }
 
-            mesh.vertices = verts;
-            mesh.triangles = tris;
-            mesh.normals = normals;
-            mesh.uv = uv;
+            _meshFilter.mesh = MakeMesh(verts, uv, tris, normals);        
 
-            _meshFilter.mesh = mesh;
         }
 
         public void CreateSegmented()
         {
-            var mesh = new Mesh();
             var verts = new Vector3[_vertexCount * 2];
             var uv = new Vector2[_vertexCount * 2];
             var tris = new int[_segmentCount * 6];
@@ -136,8 +118,8 @@ namespace Client._Scripts.Polygon
                 uv[_vertexCount - i - 1] = new Vector3(x, y);
                 normals[i] = Vector3.back;
             
-                verts[_vertexCount * 2 - i - 1] = new Vector3(x, y) * (_radius * _innerRadiusFraction / 100f);
-                uv[_vertexCount * 2- i - 1] = new Vector3(x, y) * (_innerRadiusFraction / 100);
+                verts[_vertexCount * 2 - i - 1] = new Vector3(x, y) * (_radius - _innerRadius );
+                uv[_vertexCount * 2- i - 1] = new Vector3(x, y) * (_innerRadius / _radius);
                 normals[_vertexCount + i] = Vector3.back;
             }
 
@@ -147,8 +129,11 @@ namespace Client._Scripts.Polygon
                 randomSegments[i] = i;
             }
 
-            if(_generateRandomSegments)
-                randomSegments = randomSegments.OrderBy(_ => Random.Range(0, 1024)).ToArray();
+            if (_generateRandomSegments)
+            {
+                System.Random random = new System.Random();
+                randomSegments = randomSegments.OrderBy(_ => random.Next()).ToArray();
+            }
 
             for (int i = 0; i < _segmentCount; i++)
             {
@@ -161,13 +146,31 @@ namespace Client._Scripts.Polygon
                 tris[_segmentCount * 3 + i * 3 + 1] = (segmentNumber + 1) % _vertexCount + _vertexCount;
                 tris[_segmentCount * 3 + i * 3 + 2] = (segmentNumber + _vertexCount) % _vertexCount + _vertexCount;
             }
-
-            mesh.vertices = verts;
-            mesh.triangles = tris;
-            mesh.normals = normals;
-            mesh.uv = uv;
-
-            _meshFilter.mesh = mesh;
+            _meshFilter.mesh = MakeMesh(verts, uv, tris, normals);
         }
+        
+        private void Validation()
+        {
+            if (_vertexCount < 3)
+                _vertexCount = 3;
+
+            if (_radius <= 0)
+                _radius = 0.001f;
+            
+            if (_innerRadius >= _radius)
+                _innerRadius = _radius;
+
+            if (_innerRadius < 0)
+                _innerRadius = 0;
+            
+            if (_segmentCount < 1)
+                _segmentCount = 1;
+            
+            if (_segmentCount >= _vertexCount)
+                _segmentCount = _vertexCount - 1;
+            
+        }
+        private Mesh MakeMesh(Vector3[] verts, Vector2[] uv, int[] tris, Vector3[] normals) 
+            => new Mesh {vertices = verts, triangles = tris, normals = normals, uv = uv};
     }
 }
