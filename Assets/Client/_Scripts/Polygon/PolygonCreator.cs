@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using UnityEngine;
 
@@ -6,32 +7,28 @@ namespace Client._Scripts.Polygon
     [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
     public class PolygonCreator : MonoBehaviour
     {
-        [SerializeField] private int _vertexCount;
-        [SerializeField] private float _radius;
+        [SerializeField] protected int _vertexCount;
+        
+        //TODO: Is there way to prevent public, if I need both get and set value from outer class? 
+        [SerializeField] public float _radius;
         [Range(0, 120)]
-        [SerializeField] private float _phase;
+        [SerializeField] protected float _phase;
 
+        //TODO: Create HoledPolygons CLass and inherit this class
         [Header("For polygons with a hole")]
-        [SerializeField] private float _innerRadius;
-        
-        [Header("For segmented polygon")]
-        [SerializeField] private int _segmentCount;
-        [SerializeField] private bool _generateRandomSegments;
-        
-        private MeshFilter _meshFilter;
+        [SerializeField] protected float _width;
+
+        protected MeshFilter _meshFilter;
+
+        protected void Awake()
+        {
+            _meshFilter = GetComponent<MeshFilter>();
+        }
 
         private void OnValidate()
         {
             Validation();
         }
-
-
-        public void PreCreate()
-        =>
-            // ReSharper disable once Unity.PerformanceCriticalCodeInvocation
-            _meshFilter = GetComponent<MeshFilter>();
-        
-        
         public void CreateSolid()
         {
             var verts = new Vector3[_vertexCount];
@@ -56,7 +53,7 @@ namespace Client._Scripts.Polygon
                 tris[i * 3 + 1] = 0;
                 tris[i * 3 + 2] = i + 1;
             }
-                  
+
             _meshFilter.mesh = MakeMesh(verts, uv, tris, normals);        
         }
 
@@ -67,20 +64,18 @@ namespace Client._Scripts.Polygon
             var tris = new int[_vertexCount * 6];
             var normals = new Vector3[_vertexCount * 2];
             
-            float x, y;
             var angleStep = 360.0f / _vertexCount;
         
             for (var i = 0; i < _vertexCount; i++)
             {
-                x = Mathf.Cos((i * angleStep + _phase)  * Mathf.Deg2Rad);
-                y = Mathf.Sin((i * angleStep + _phase) * Mathf.Deg2Rad);
-
-                verts[_vertexCount - i - 1] = new Vector3(x, y) * _radius;
-                uv[_vertexCount - i - 1] = new Vector3(x, y);
+                var angle = i * angleStep + _phase;
+                
+                verts[_vertexCount - i - 1] = PolarToCartesian(angle, _radius);
+                uv[_vertexCount - i - 1] = PolarToCartesian(angle);
                 normals[i] = Vector3.back;
             
-                verts[_vertexCount * 2 - i - 1] = new Vector3(x, y) * (_radius - _innerRadius);
-                uv[_vertexCount * 2- i - 1] = new Vector3(x, y) * (_innerRadius / _radius);
+                verts[_vertexCount * 2 - i - 1] = PolarToCartesian(angle, _radius - _width);
+                uv[_vertexCount * 2- i - 1] = PolarToCartesian(angle, _width / _radius);
                 normals[_vertexCount + i] = Vector3.back;
             }
 
@@ -99,57 +94,7 @@ namespace Client._Scripts.Polygon
 
         }
 
-        public void CreateSegmented()
-        {
-            var verts = new Vector3[_vertexCount * 2];
-            var uv = new Vector2[_vertexCount * 2];
-            var tris = new int[_segmentCount * 6];
-            var normals = new Vector3[_vertexCount * 2];
-            
-            float x, y;
-            var angleStep = 360.0f / _vertexCount;
-        
-            for (var i = 0; i < _vertexCount; i++)
-            {
-                x = Mathf.Cos((i * angleStep + _phase)  * Mathf.Deg2Rad);
-                y = Mathf.Sin((i * angleStep + _phase) * Mathf.Deg2Rad);
-
-                verts[_vertexCount - i - 1] = new Vector3(x, y) * _radius;
-                uv[_vertexCount - i - 1] = new Vector3(x, y);
-                normals[i] = Vector3.back;
-            
-                verts[_vertexCount * 2 - i - 1] = new Vector3(x, y) * (_radius - _innerRadius );
-                uv[_vertexCount * 2- i - 1] = new Vector3(x, y) * (_innerRadius / _radius);
-                normals[_vertexCount + i] = Vector3.back;
-            }
-
-            var randomSegments = new int[_vertexCount];
-            for (int i = 0; i < _vertexCount; i++)
-            {
-                randomSegments[i] = i;
-            }
-
-            if (_generateRandomSegments)
-            {
-                System.Random random = new System.Random();
-                randomSegments = randomSegments.OrderBy(_ => random.Next()).ToArray();
-            }
-
-            for (int i = 0; i < _segmentCount; i++)
-            {
-                var segmentNumber = randomSegments[i];
-                tris[i * 3] = segmentNumber;
-                tris[i * 3 + 1] = (segmentNumber + 1) % _vertexCount;
-                tris[i * 3 + 2] = segmentNumber + _vertexCount;
-
-                tris[_segmentCount * 3 + i * 3] = (segmentNumber + 1) % _vertexCount;
-                tris[_segmentCount * 3 + i * 3 + 1] = (segmentNumber + 1) % _vertexCount + _vertexCount;
-                tris[_segmentCount * 3 + i * 3 + 2] = (segmentNumber + _vertexCount) % _vertexCount + _vertexCount;
-            }
-            _meshFilter.mesh = MakeMesh(verts, uv, tris, normals);
-        }
-        
-        private void Validation()
+        protected void Validation()
         {
             if (_vertexCount < 3)
                 _vertexCount = 3;
@@ -157,20 +102,22 @@ namespace Client._Scripts.Polygon
             if (_radius <= 0)
                 _radius = 0.001f;
             
-            if (_innerRadius >= _radius)
-                _innerRadius = _radius;
+            if (_width >= _radius)
+                _width = _radius;
 
-            if (_innerRadius < 0)
-                _innerRadius = 0;
-            
-            if (_segmentCount < 1)
-                _segmentCount = 1;
-            
-            if (_segmentCount >= _vertexCount)
-                _segmentCount = _vertexCount - 1;
-            
+            if (_width < 0)
+                _width = 0;
         }
-        private Mesh MakeMesh(Vector3[] verts, Vector2[] uv, int[] tris, Vector3[] normals) 
+
+        protected Vector3 PolarToCartesian(float angle, float radius = 1) =>
+            new Vector3(
+                Mathf.Cos(angle * Mathf.Deg2Rad) * radius,
+                Mathf.Sin(angle * Mathf.Deg2Rad) * radius
+                );
+        
+        protected Mesh MakeMesh(Vector3[] verts, Vector2[] uv, int[] tris, Vector3[] normals) 
             => new Mesh {vertices = verts, triangles = tris, normals = normals, uv = uv};
+
+        public Mesh GetMesh() => _meshFilter.mesh;
     }
 }
