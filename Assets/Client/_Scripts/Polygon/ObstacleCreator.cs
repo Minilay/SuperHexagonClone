@@ -12,8 +12,7 @@ public class ObstacleCreator : PolygonCreator
     [SerializeField] private bool _randomSegmentCount;
     [SerializeField] private int _segmentCount;
     
-    
-    private List<int> _activeSegments;
+    public List<int> activeSegments;
 
     protected new void Awake()
     {
@@ -46,8 +45,7 @@ public class ObstacleCreator : PolygonCreator
         for (var i = 0; i < _vertexCount; i++)
         {
             var angle = i * angleStep + _phase;
-            var coordinates = PolarToCartesian(angle);    
-            
+            var coordinates = Utils.PolarToCartesian(angle);    
             
             verts[_vertexCount - i - 1] = coordinates * _radius;
             uv[_vertexCount - i - 1] = coordinates;
@@ -58,12 +56,14 @@ public class ObstacleCreator : PolygonCreator
             normals[_vertexCount + i] = Vector3.back;
         }
 
-        if(_activeSegments.isEmpty())
-            _activeSegments = new List<int>(Enumerable.Range(0, _vertexCount));
+        if(activeSegments.isEmpty())
+            activeSegments = new List<int>(Enumerable.Range(0, _vertexCount));
         
+        activeSegments.RemoveRange(_segmentCount, activeSegments.Count - _segmentCount);
+        activeSegments.Sort();
         for (var i = 0; i < _segmentCount; i++)
         {
-            var segmentNumber = _activeSegments[i];
+            var segmentNumber = activeSegments[i];
             tris[i * 3] = segmentNumber;
             tris[i * 3 + 1] = (segmentNumber + 1) % _vertexCount;
             tris[i * 3 + 2] = segmentNumber + _vertexCount;
@@ -78,7 +78,7 @@ public class ObstacleCreator : PolygonCreator
 
     public ObstacleCreator ShuffleSegments()
     {
-        _activeSegments =  new List<int>(Enumerable.Range(0, _vertexCount)).Shuffle();
+        activeSegments =  new List<int>(Enumerable.Range(0, _vertexCount)).Shuffle();
         CreateSegmented();
 
         return this;

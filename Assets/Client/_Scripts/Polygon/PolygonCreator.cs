@@ -18,7 +18,7 @@ namespace Client._Scripts.Polygon
         [Header("For polygons with a hole")]
         [SerializeField] protected float _width;
 
-        protected MeshFilter _meshFilter;
+        [SerializeField] protected MeshFilter _meshFilter;
 
         protected void Awake()
         {
@@ -69,13 +69,14 @@ namespace Client._Scripts.Polygon
             for (var i = 0; i < _vertexCount; i++)
             {
                 var angle = i * angleStep + _phase;
-                
-                verts[_vertexCount - i - 1] = PolarToCartesian(angle, _radius);
-                uv[_vertexCount - i - 1] = PolarToCartesian(angle);
-                normals[i] = Vector3.back;
+                var coordinates = Utils.PolarToCartesian(angle);    
             
-                verts[_vertexCount * 2 - i - 1] = PolarToCartesian(angle, _radius - _width);
-                uv[_vertexCount * 2- i - 1] = PolarToCartesian(angle, _width / _radius);
+                verts[_vertexCount - i - 1] = coordinates * _radius;
+                uv[_vertexCount - i - 1] = coordinates;
+                normals[i] = Vector3.back;
+
+                verts[_vertexCount * 2 - i - 1] = coordinates * (_radius - _width);
+                uv[_vertexCount * 2- i - 1] = coordinates * (_width / _radius);
                 normals[_vertexCount + i] = Vector3.back;
             }
 
@@ -108,16 +109,10 @@ namespace Client._Scripts.Polygon
             if (_width < 0)
                 _width = 0;
         }
-
-        protected Vector3 PolarToCartesian(float angle, float radius = 1) =>
-            new Vector3(
-                Mathf.Cos(angle * Mathf.Deg2Rad) * radius,
-                Mathf.Sin(angle * Mathf.Deg2Rad) * radius
-                );
         
         protected Mesh MakeMesh(Vector3[] verts, Vector2[] uv, int[] tris, Vector3[] normals) 
             => new Mesh {vertices = verts, triangles = tris, normals = normals, uv = uv};
 
-        public Mesh GetMesh() => _meshFilter.mesh;
+        public int GetVertexCount => _vertexCount;
     }
 }
