@@ -4,14 +4,14 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
-[CustomEditor(typeof(ObstacleCreator))]
-public class ObstacleCreatorEditor : Editor
+[CustomEditor(typeof(PolygonSegmentsCreator))]
+public class PolygonSegmentsCreatorEditor : Editor
 {
-    private ObstacleCreator _obstacleCreator;
+    private PolygonSegmentsCreator _obstacleMeshCreator;
 
     private void OnEnable()
     {
-        _obstacleCreator = (ObstacleCreator) target;
+        _obstacleMeshCreator = (PolygonSegmentsCreator) target;
     }
 
     public override void OnInspectorGUI()
@@ -19,12 +19,12 @@ public class ObstacleCreatorEditor : Editor
         base.OnInspectorGUI();
         GUIButton.Button(() =>
         {
-            _obstacleCreator.CreateSegmented();
+            _obstacleMeshCreator.Create();
         }, "Create Segmented Polygon");
         
         GUIButton.Button(() =>
         {
-            _obstacleCreator.ShuffleSegments();
+            _obstacleMeshCreator.ShuffleSegments();
         }, "Reshuffle Segments");
     }
 }

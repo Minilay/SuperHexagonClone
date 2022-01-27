@@ -94,11 +94,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 828de6f35dc705747b416e2ff3ecc44e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _vertexCount: 6
-  _radius: 50
+  _vertexCount: 3
+  <Radius>k__BackingField: 50
   _phase: 0
-  _width: 1.4
   _meshFilter: {fileID: 0}
-  _randomSegmentCount: 1
+  _angleStep: 0
+  _width: 2
+  <RandomSegmentCount>k__BackingField: 1
   _segmentCount: 3
-  activeSegments: 
+  <ActiveSegments>k__BackingField: 00000000010000000200000003000000040000000500000006000000

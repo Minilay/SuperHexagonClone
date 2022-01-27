@@ -1,16 +1,15 @@
-
-using System;
+﻿using System;
 using NUnit.Framework.Constraints;
 using UnityEditor;
 using UnityEngine;
 
-[CustomEditor(typeof(PolygonCreator))]
-public class PolygonCreatorEditor : Editor
+[CustomEditor(typeof(HollowPolygonCreator))]
+public class HollowPolygonCreatorEditor: Editor
 {
-    private PolygonCreator _polygonCreator;
+    private HollowPolygonCreator _polygonCreator;
     private void OnEnable()
     {
-        _polygonCreator = (PolygonCreator) target;
+        _polygonCreator = (HollowPolygonCreator) target;
     }
 
     public override void OnInspectorGUI()
@@ -20,7 +19,7 @@ public class PolygonCreatorEditor : Editor
         GUIButton.Button(() =>
         {
             _polygonCreator.Create();
-        }, "Create Solid Polygon");
+        }, "Create Hollow Polygon");
 
     }
 }
