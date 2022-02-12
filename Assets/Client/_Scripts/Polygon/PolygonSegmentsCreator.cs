@@ -14,10 +14,7 @@ public class PolygonSegmentsCreator : PolygonCreator
     protected override void Awake()
     {
         if (RandomSegmentCount)
-        {
             _segmentCount = Random.Range(1, _vertexCount);
-            Debug.Log($"{_vertexCount} - {_segmentCount}");
-        }
 
         base.Awake();
     }
@@ -41,7 +38,7 @@ public class PolygonSegmentsCreator : PolygonCreator
     }
 
 
-    public override void CalculatePolygonMesh()
+    protected override void CalculatePolygonMesh()
     {
         var verts = new Vector3[_vertexCount * 2];
         var uv = new Vector2[_vertexCount * 2];
@@ -80,6 +77,25 @@ public class PolygonSegmentsCreator : PolygonCreator
             tris[_segmentCount * 3 + i * 3 + 2] = (segmentNumber + _vertexCount) % _vertexCount + _vertexCount;
         }
         _meshFilter.mesh = MakeMesh(verts, uv, tris, normals);
+    }
+
+    protected override IEnumerator SmoothVertexDecrease(float _smoothTransitionTime)
+    {
+        var startAngle = _angleStep;
+        var newAngleStep = 360.0f / (_vertexCount - 1 ) ;
+
+        var currentTime = .0f;
+        while (currentTime <= _smoothTransitionTime)
+        {
+            currentTime += Time.deltaTime;
+            CalculatePolygonMesh();
+            _angleStep = Mathf.LerpAngle(startAngle, newAngleStep, currentTime / _smoothTransitionTime);
+            yield return null;
+        }
+        _vertexCount--;
+
+        ActiveSegments = new List<int>(Enumerable.Range(0, _vertexCount ));
+        // CalculatePolygonMesh();
     }
 
     public PolygonSegmentsCreator ShuffleSegments()

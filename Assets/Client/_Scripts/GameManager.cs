@@ -3,27 +3,31 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 public class GameManager : MonoBehaviour
 {
+    [Header("Obstacle Management")]
     [SerializeField] private ObstacleSpawner _obstacleSpawner;
     [SerializeField] private ObstacleManager _obstacleManager;
     
-    
+    [Header("Polygon creators")]
     [SerializeField] private PolygonCreator _centralPolygon;
     [SerializeField] private PolygonCreator _centralPolygonBorder;
     [SerializeField] private PolygonSegmentsCreator _backgroundPrimary;
     [SerializeField] private  PolygonSegmentsCreator _backgroundSecondary;
 
-    [SerializeField] private float _transitionTime;
-
+    [Header("Timings")]
     [SerializeField] private float _vertexChangeInterval;
-
     [SerializeField] private float _enclosedTime;
     [SerializeField] private float _slowMotionTime;
     
-    [field: SerializeField] public int VertexCount { get; private set; }
-
+    [Range(3, 12)]
+    [SerializeField] private int _minHexagonAmount;
+    [Range(3, 12)]
+    [SerializeField] private int _maxHexagonAmount;
+    
+    [field: SerializeField] private int VertexCount { get; set; }
     private List<PolygonCreator> _allPolygons;
     private void Awake()
     {
@@ -37,6 +41,12 @@ public class GameManager : MonoBehaviour
 
         StartCoroutine(PolygonChanger());
 
+    }
+
+    private void OnValidate()
+    {
+        if (_minHexagonAmount >= _maxHexagonAmount)
+            _maxHexagonAmount++;
     }
 
     private void CreateAllPolygons()
@@ -58,15 +68,25 @@ public class GameManager : MonoBehaviour
 
     private IEnumerator PolygonChanger()
     {
-
-        var toDecrease = false;
         while (true)
         {
             yield return new WaitForSeconds(_vertexChangeInterval);
-            StartCoroutine(toDecrease ? DecreasePolygon() : IncreasePolygon());
-
-            toDecrease = !toDecrease;
-
+            if (VertexCount == _minHexagonAmount)
+            {
+                StartCoroutine(IncreasePolygon());
+            }
+            else if (VertexCount == _maxHexagonAmount)
+            {
+                StartCoroutine(DecreasePolygon());
+            }
+            else if (Random.Range(0, 100) > 50)
+            {
+                StartCoroutine(IncreasePolygon());
+            }
+            else
+            {
+                StartCoroutine(DecreasePolygon());
+            }
         }
     }
     //TODO: Refactor code, so that there won't be 5 calls from _obstacleSpawner
@@ -74,13 +94,13 @@ public class GameManager : MonoBehaviour
     { 
         VertexCount++;
         StopCoroutine(_obstacleSpawner.RegularCoroutine);
-        StartCoroutine(_obstacleSpawner.SpawnEnclosedObstacle());
+        StartCoroutine(_obstacleSpawner.PreIncrease());
 
         yield return new WaitForSeconds(_enclosedTime);
    
-        _obstacleSpawner.Obstacles.ForEach(x => x.IncreaseVertex(_transitionTime));
+        _obstacleSpawner.Obstacles.ForEach(x => x.IncreaseVertex());
         
-        _allPolygons.ForEach(x => x.IncreaseVertex(_transitionTime));
+        _allPolygons.ForEach(x => x.IncreaseVertex());
         SetBackground();
         
         _obstacleSpawner.RegularCoroutine = StartCoroutine(_obstacleSpawner.SpawnObstacles());
@@ -96,9 +116,21 @@ public class GameManager : MonoBehaviour
     private IEnumerator DecreasePolygon()
     {
         VertexCount--;
-        _allPolygons.ForEach(x => x.DecreaseVertex(_transitionTime));
+        StopCoroutine(_obstacleSpawner.RegularCoroutine);
+        StartCoroutine(_obstacleSpawner.PreDecrease());
+
+        yield return new WaitForSeconds(_enclosedTime);
+   
+        _obstacleSpawner.Obstacles.ForEach(x => x.DecreaseVertex());
+        
+        _allPolygons.ForEach(x => x.DecreaseVertex());
         SetBackground();
-        _obstacleSpawner.DecreasePolygon();
-        yield return null;
+        
+        _obstacleSpawner.RegularCoroutine = StartCoroutine(_obstacleSpawner.SpawnObstacles());
+        
+        var shrinkSpeed = _obstacleManager.ShrinkSpeed;
+        _obstacleManager.ShrinkSpeed /= 4;
+        yield return new WaitForSeconds(_slowMotionTime);
+        _obstacleManager.ShrinkSpeed = shrinkSpeed;
     }
 }

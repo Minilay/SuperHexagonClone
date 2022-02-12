@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using TMPro.EditorUtilities;
 using UnityEngine;
 
 public class ObstacleSpawner : MonoBehaviour
@@ -33,11 +34,11 @@ public class ObstacleSpawner : MonoBehaviour
         }
     }
 
-    public IEnumerator SpawnEnclosedObstacle()
+    public IEnumerator PreIncrease()
     {
         yield return new WaitForSeconds(_spawnInterval);
         
-        const int obstacleCount = 4;
+        const int obstacleCount = 3;
         for (var i = 0; i < obstacleCount; i++)
         {
             obstacleMeshPrefab.SetVertexCount(_obstaclesVertexCount);
@@ -48,18 +49,31 @@ public class ObstacleSpawner : MonoBehaviour
             yield return new WaitForSeconds(_spawnInterval / 4);
         }
         _obstaclesVertexCount++;
-
     }
 
+    public IEnumerator PreDecrease()
+    {
+        yield return new WaitForSeconds(_spawnInterval);
+        obstacleMeshPrefab.RandomSegmentCount = false;
+        obstacleMeshPrefab.SetSegmentCount(_obstaclesVertexCount - 2);
+
+        var obstacle = Instantiate(obstacleMeshPrefab, transform);
+
+        var activeSegments = new List<int>(Enumerable.Range(0, _obstaclesVertexCount));
+        activeSegments.Remove(0);
+        activeSegments.Remove(_obstaclesVertexCount - 1);
+        obstacle.ActiveSegments = activeSegments;
+
+        obstacle.Create();
+        Obstacles.Add(obstacle);
+        
+        _obstaclesVertexCount--;
+
+    }
     public PolygonSegmentsCreator GetFirstObstacle() => Obstacles.FirstOrDefault();
     public void RemoveFirstObstacle() => Obstacles.RemoveAt(0);
     
 
-    public void DecreasePolygon()
-    {
-        _obstaclesVertexCount--;
-
-    }
     public void SetObstacleVertexCount(int vertexCount)
     {
         if (vertexCount < 3) return;

@@ -16,7 +16,7 @@ public class HollowPolygonCreator : PolygonCreator
             _width = 0;
     }
 
-    public override void CalculatePolygonMesh()
+    protected override void CalculatePolygonMesh()
     {
         var verts = new Vector3[_vertexCount * 2];
         var uv = new Vector2[_vertexCount * 2];

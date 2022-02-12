@@ -14,6 +14,7 @@ using UnityEngine;
         [SerializeField] protected float _angleStep;
 
 
+        private float _transitionTime = .2f;
         protected virtual void Awake()
         {
             _meshFilter = GetComponent<MeshFilter>();
@@ -30,11 +31,12 @@ using UnityEngine;
 
         public void Create()
         {
-            _angleStep = 360.0f / _vertexCount;
+            if(_angleStep == 0)
+                _angleStep = 360.0f / _vertexCount;
             CalculatePolygonMesh();
         }
 
-        public virtual void CalculatePolygonMesh()
+        protected virtual void CalculatePolygonMesh()
         {
             var verts = new Vector3[_vertexCount];
             var uv = new Vector2[_vertexCount];
@@ -72,20 +74,20 @@ using UnityEngine;
                 return;
             _vertexCount = vertexCount;
         }
-        public void DecreaseVertex(float time) 
+        public void DecreaseVertex() 
         {
             if(_vertexCount == 3)
                 return;
-            StartCoroutine(SmoothVertexDecrease(time));
+            StartCoroutine(SmoothVertexDecrease(_transitionTime));
         }
 
-        public void IncreaseVertex(float time)
+        public void IncreaseVertex()
         {
             _vertexCount++;
-            StartCoroutine(SmoothVertexIncrease(time));
+            StartCoroutine(SmoothVertexIncrease(_transitionTime));
         }
 
-        private IEnumerator SmoothVertexDecrease(float _smoothTransitionTime)
+        protected virtual IEnumerator SmoothVertexDecrease(float _smoothTransitionTime)
         {
             var startAngle = _angleStep;
             var newAngleStep = 360.0f / (_vertexCount - 1 ) ;
@@ -94,8 +96,8 @@ using UnityEngine;
             while (currentTime <= _smoothTransitionTime)
             {
                 currentTime += Time.deltaTime;
-                _angleStep = Mathf.LerpAngle(startAngle, newAngleStep, currentTime / _smoothTransitionTime);
                 CalculatePolygonMesh();
+                _angleStep = Mathf.LerpAngle(startAngle, newAngleStep, currentTime / _smoothTransitionTime);
                 yield return null;
             }
             _vertexCount--;
