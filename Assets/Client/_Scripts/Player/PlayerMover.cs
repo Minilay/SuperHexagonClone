@@ -11,7 +11,7 @@ public class PlayerMover : MonoBehaviour
     {
         transform.Rotate(
             new Vector3(0,
-                Input.GetAxisRaw("Horizontal") * _rotationSpeed * Time.deltaTime,
+                (Input.GetAxisRaw("Horizontal")) * _rotationSpeed * Time.deltaTime,
                 0
                 ));
     }
